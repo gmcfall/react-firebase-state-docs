@@ -1,30 +1,172 @@
 ---
-title: Home
+title: Get Started
 layout: home
 ---
+# Get Started
 
-This is a *bare-minimum* template to create a Jekyll site that uses the [Just the Docs] theme. You can easily set the created site to be published on [GitHub Pages] – the [README] file explains how to do that, along with other details.
+`react-firebase-state` is a component library that helps you manage server-side state from *Firebase Auth* and *Firestore* 
+within a React web app. It also provides utilities for managing client-side state that you control.
 
-If [Jekyll] is installed on your computer, you can also build and preview the created site *locally*. This lets you test changes before committing them, and avoids waiting for GitHub Pages.[^1] And you will be able to deploy your local build to a different platform than GitHub Pages.
+## Installation
 
-More specifically, the created site:
+To use `react-firebase-state`, you must install four peer dependencies:
+- `react`
+- `react-dom`
+- `immer`
+- `firebase`
 
-- uses a gem-based approach, i.e. uses a `Gemfile` and loads the `just-the-docs` gem
-- uses the [GitHub Pages / Actions workflow] to build and publish the site on GitHub Pages
+In your react project folder, use npm to install these dependencies:
+```sh
+npm install react react-dom immer firebase
+```
 
-Other than that, you're free to customize sites that you create with this template, however you like. You can easily change the versions of `just-the-docs` and Jekyll it uses, as well as adding further plugins.
+Then install the `react-firebase-state` component library.
+```sh
+npm install @gmcfall/react-firebase-state
+```
+## Prerequisites
 
-[Browse our documentation][Just the Docs] to learn more about how to use this theme.
+This documentation assumes that you are familiar with [React] and [Firebase].
 
-To get started with creating a site, just click "[use this template]"!
+## Basic Usage
+
+The `react-firebase-state` library provides a collection of hooks and other utility
+functions for managing state. To use these utilities in the child components
+of your application, you must wrap them within a `<FirebaseProvider>` component.
+
+### Wrap your application
+
+```tsx
+// ...
+import { FirebaseProvider } from '@gmcfall/react-firebase-state';
+
+// Initialize your firebase app and pass it to the <FirebaseProvider> component. 
+// It is not necessary to implement a function called "initializeFirebaseApp".  
+// You could initialize Firebase in a module and simply export `firebaseApp` 
+// as a constant. How you perform the initialization is up to you.
+
+const firebaseApp = initializeFirebaseApp();
+
+export function App() {
+
+    return (
+        <FirebaseProvider firebaseApp={firebaseApp}>
+           { /* Add your child components here*/ }
+        </FirebaseProvider>
+    )
+}
+
+```
+
+### Use `react-firebase-state` in child components
+
+#### Access the current user
+
+This example shows how you can get information about the current user from the Firebase 
+[AuthStateListener].
+
+```jsx
+import { useAuthListener } from '@gmcfall/react-firebase-state';
+
+export function ComponentThatAccessesTheCurrentUser(props) {
+    
+    const [userStatus, user, userError] = useAuthListener();
+
+    switch (userStatus) {
+        case "pending":
+            // Information about the current user is being fetched
+            // asynchronously. You might want to render a spinner.
+            // `user` and `userError` are undefined. 
+            break;
+
+        case "signedIn":
+            // The current user is signed in. 
+            // The `user` variable contains the Firebase `User` object.
+            // `userError` is undefined.
+            break;
+        
+
+        case "signedOut":
+            // The current user is signed in. 
+            // The `user` variable holds the  Firebase `User` object.
+            // `userError` is undefined
+            break;
+
+        case "error":
+            // An error occurred while fetching information about the user.
+            // `user` is undefined.
+            // `userError` contains the Error thrown by Firebase
+            break;
+    }
+
+    // ...
+}
+```
+
+#### Listen for changes to a Firestore document
+
+In this example, a component listens for changes to a Firestore document
+containing information about a city. The id for the city document is
+passed via props.
+
+```jsx
+import { useEffect } from "react";
+import { 
+    useDocListener,
+    releaseEntities
+} from '@gmcfall/react-firebase-state';
+
+export function SomeComponent(props) {
+
+    const [cityStatus, city, cityError] = useDocListener(
+        "SomeComponent", ["cities", cityId]
+    );
+
+    useEffect(() => () => releaseEntities("SomeComponent"), []);
+
+    switch (cityStatus) {
+
+        case "pending":
+            // The document is being fetched asynchronously and
+            // the response is pending.
+            // The `city` and `cityError` variables are undefined.
+            break;
+
+        case "success":
+            // The document was successfully retrieved from Firestore.
+            // The `city` variable contains the document data.
+            // `cityError` is undefined.
+            break;
+
+        case "error":
+            // An error occurred while fetching the document from Firestore.
+            // `city` is undefined.
+            // `cityError` contains the Error thrown by Firestore.
+            break;
+    }
+    // ...
+}
+```
+
+The `useDocListener` hook does two things:
+
+1. It starts a listener for the specified Firestore document.
+2. It establishes a lease on the document data.
+
+The document data will remain in a local cache, and be updated when changes occur, 
+as long there is at least one component holding a lease on the document.
+
+The first argument to `useDocListener` is the name of the lease holder.  This name can be
+anything, but it is a best practice to use the name of the component.
+
+The second argument is the path to the target document expressed as an array of strings. 
+In this example, "cities" is the name of the Firestore collection and `cityId` is the 
+document id, so `["cities", cityId]` is the path to the document.
+
+The `useEffect` hook releases all of the component's leases when it unmounts.
 
 ----
 
-[^1]: [It can take up to 10 minutes for changes to your site to publish after you push the changes to GitHub](https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/creating-a-github-pages-site-with-jekyll#creating-your-site).
-
-[Just the Docs]: https://just-the-docs.github.io/just-the-docs/
-[GitHub Pages]: https://docs.github.com/en/pages
-[README]: https://github.com/just-the-docs/just-the-docs-template/blob/main/README.md
-[Jekyll]: https://jekyllrb.com
-[GitHub Pages / Actions workflow]: https://github.blog/changelog/2022-07-27-github-pages-custom-github-actions-workflows-beta/
-[use this template]: https://github.com/just-the-docs/just-the-docs-template/generate
+[React]: https://reactjs.org/
+[Firebase]: https://firebase.google.com/
+[AuthStateListener]: https://firebase.google.com/docs/reference/kotlin/com/google/firebase/auth/FirebaseAuth.AuthStateListener
