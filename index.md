@@ -1,6 +1,7 @@
 ---
 title: Get Started
 layout: home
+nav_order: 1
 ---
 # Get Started
 
@@ -28,19 +29,18 @@ npm install @gmcfall/react-firebase-state
 
 This documentation assumes that you are familiar with [React] and [Firebase].
 
-## Basic Usage
+## Using the library
 
-The `react-firebase-state` library provides a collection of hooks and other utility
-functions for managing state. To use these utilities in the child components
-of your application, you must wrap them within a `<FirebaseProvider>` component.
+The `react-firebase-state` library provides a collection of hooks and other utilities
+for managing state. To use the library in the child components of your application, 
+you must wrap them within a `<FirebaseProvider>` component.
 
 ### Wrap your application
 
 ```tsx
-// ...
 import { FirebaseProvider } from '@gmcfall/react-firebase-state';
 
-// Initialize your firebase app and pass it to the <FirebaseProvider> component. 
+// Initialize your app and pass the FirebaseApp object to <FirebaseProvider>.
 // It is not necessary to implement a function called "initializeFirebaseApp".  
 // You could initialize Firebase in a module and simply export `firebaseApp` 
 // as a constant. How you perform the initialization is up to you.
@@ -58,7 +58,16 @@ export function App() {
 
 ```
 
-### Use `react-firebase-state` in child components
+### Usage in child components
+
+There are lots of ways to use the `react-firebase-state` library. Here, we merely 
+illustrate two common use cases:
+
+- [Access the current user](#access-the-current-user)
+- [Listen for changes to a document](#listen-for-changes-to-a-firestore-document)
+
+For other use cases, explore the list of available guides.
+
 
 #### Access the current user
 
@@ -68,7 +77,7 @@ This example shows how you can get information about the current user from the F
 ```jsx
 import { useAuthListener } from '@gmcfall/react-firebase-state';
 
-export function ComponentThatAccessesTheCurrentUser(props) {
+export function ComponentThatAccessesTheCurrentUser() {
     
     const [userStatus, user, userError] = useAuthListener();
 
@@ -83,8 +92,7 @@ export function ComponentThatAccessesTheCurrentUser(props) {
             // The current user is signed in. 
             // The `user` variable contains the Firebase `User` object.
             // `userError` is undefined.
-            break;
-        
+            break;        
 
         case "signedOut":
             // The current user is signed in. 
@@ -111,16 +119,11 @@ passed via props.
 
 ```jsx
 import { useEffect } from "react";
-import { 
-    useDocListener,
-    releaseEntities
-} from '@gmcfall/react-firebase-state';
+import { useDocListener, releaseEntities } from '@gmcfall/react-firebase-state';
 
-export function SomeComponent(props) {
+export function SomeComponent({ cityId }) {
 
-    const [cityStatus, city, cityError] = useDocListener(
-        "SomeComponent", ["cities", cityId]
-    );
+    const [cityStatus, city, cityError] = useDocListener("SomeComponent", ["cities", cityId]);
 
     useEffect(() => () => releaseEntities("SomeComponent"), []);
 
@@ -150,11 +153,12 @@ export function SomeComponent(props) {
 
 The `useDocListener` hook does two things:
 
-1. It starts a listener for the specified Firestore document.
+1. It starts a listener for the specified Firestore document and returns the 
+   document data (or an error).
 2. It establishes a lease on the document data.
 
-The document data will remain in a local cache, and be updated when changes occur, 
-as long there is at least one component holding a lease on the document.
+As long as there is at least one component holding a lease, the document data will 
+remain in a local cache and be updated when changes occur.
 
 The first argument to `useDocListener` is the name of the lease holder.  This name can be
 anything, but it is a best practice to use the name of the component.
@@ -163,7 +167,7 @@ The second argument is the path to the target document expressed as an array of 
 In this example, "cities" is the name of the Firestore collection and `cityId` is the 
 document id, so `["cities", cityId]` is the path to the document.
 
-The `useEffect` hook releases all of the component's leases when it unmounts.
+When the component unmounts, the `useEffect` hook releases all of the component's leases.
 
 ----
 

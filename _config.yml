@@ -6,3 +6,5 @@ url: https://gmcfall.github.io/react-firebase-state-docs
 
 aux_links:
   Github Repository: https://gmcfall.github.io/react-firebase-state-docs
+
+BASE_PATH: /react-firebase-state-docs
