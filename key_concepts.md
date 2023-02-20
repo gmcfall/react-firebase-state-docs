@@ -10,7 +10,7 @@ Before digging into details of the `react-firebase-state` library, there are
 several key concepts that you should understand, as illustrated in the following
 conceptual model.
 
-![Conceptual Model]({{ BASE_PATH }}/assets/images/conceptual_model.png)
+![Conceptual Model](assets/images/conceptual_model.png)
 
 ## Entity
 We use the term `Entity` for any data object, whether server-side or client-side.
