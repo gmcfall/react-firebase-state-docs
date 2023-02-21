@@ -2,7 +2,7 @@
 layout: default
 title: Document Listeners
 parent: Guides
-nav_order: 1
+nav_order: 2
 ---
 
 # Document Listeners
@@ -157,14 +157,18 @@ Here's a snippet showing how to use this parameter.
 ```typescript
     function handleRemove(api: LeaseeApi, serverData: ServerCity, path: string[]) {
         const message = `The city "${serverData.cityName}" has been deleted`;
-        alertInfo(api, message);
+        console.log(message);
     }
-    const [cityStatus, city, cityError] = useDocListener(
+    const [cityStatus, city, cityError] = useDocListener<City>(
         "SomeComponent", ["cities", cityId], {onRemove: handleRemove}
     );
 ```
-In the example above, the `handleRemove` function stores client-side data so that an alert
-will be displayed to notify the user that the city was deleted.
+The `handleRemove` function defined here merely logs a message to the console. In a production 
+app, you might consider rendering an "info" message that notifies the user that the city entity 
+was deleted.
+
+See [Manage client-side state] for an example that shows how you can implement an alerting
+system.
 
 ### onError
 The `onError` parameter allows you to define a callback function that fires if an error
@@ -173,16 +177,19 @@ occurred while fetching the document from Firestore.
 Here's a snippet showing how to use this parameter.
 ```typescript
     function handleError(api: LeaseeApi, error: Error, path: string[]) {
-        const message = `An error occurred while loading the city data`;
-        alertError(api, message, error);
+        const cityId = path[path.length-1];
+        const message = `An error occurred while loading the city[id=${cityId}]`;
+        console.error({message, error});
     }
-    const [cityStatus, city, cityError] = useDocListener(
+    const [cityStatus, city, cityError] = useDocListener<City>(
         "SomeComponent", ["cities", cityId], {onError: handleError}
     );
 ```
+The `onError` function defined here merely logs to the console. In a production
+app, you really should render an error message that the user will notice.
 
-In this example, the `handleError` function stores client-side data so that an alert will
-be displayed to notify the user that an error occurred.
+Again, see [Manage client-side state] for  details about implementing an alerting
+system.
 
 ### leaseOptions
 
@@ -343,7 +350,6 @@ function cityTransform(api: LeaseeApi, serverData: ServerCouncillor, path: strin
 ```
 
 The `watchEntity` function accepts the same optional parameters as `useDocListener`.
-Notice that the example above uses the `transform` parameter.
 
 ### Using `watchEntity` within an HTML event handler
 
@@ -383,8 +389,9 @@ function CityName({cityId}) {
 }
 ```
 ----
-[Get Started]: ..
+[Get Started]: ../..
 [transform]: #transform
 [onRemove]: #onremove
 [onError]: #onerror
 [leaseOptions]: #leaseoptions
+[Manage client-side state]: ./manage_client_side_state.html

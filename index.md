@@ -28,6 +28,8 @@ npm install @gmcfall/react-firebase-state
 ## Prerequisites
 
 This documentation assumes that you are familiar with [React] and [Firebase].
+Most of the examples assume some knowledge of Typescript, but you can use the 
+library with plain-old Javascript.
 
 ## Using the library
 
@@ -40,7 +42,9 @@ you must wrap them within a `<FirebaseProvider>` component.
 ```tsx
 import { FirebaseProvider } from '@gmcfall/react-firebase-state';
 
-// Initialize your app and pass the FirebaseApp object to <FirebaseProvider>.
+// You must initialize the FirebaseApp instance that your application uses
+// and pass it to the <FirebaseProvider> component.
+
 // It is not necessary to implement a function called "initializeFirebaseApp".  
 // You could initialize Firebase in a module and simply export `firebaseApp` 
 // as a constant. How you perform the initialization is up to you.

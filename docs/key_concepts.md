@@ -6,11 +6,10 @@ nav_order: 2
 
 # Key Concepts
 
-Before digging into details of the `react-firebase-state` library, there are
-several key concepts that you should understand, as illustrated in the following
-conceptual model.
+Before digging into details of the `react-firebase-state` library, it is helpful
+to understand the conceptual model illustrated below.
 
-![Conceptual Model](assets/images/conceptual_model.png)
+![Conceptual Model](../assets/images/conceptual_model.png)
 
 ## Entity
 We use the term `Entity` for any data object, whether server-side or client-side.
