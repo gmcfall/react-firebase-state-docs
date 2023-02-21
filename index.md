@@ -141,6 +141,12 @@ export function SomeComponent({ cityId }) {
             // `cityError` is undefined.
             break;
 
+        case "removed":
+            // The document was removed from Firestore.
+            // The `city` variable is null.
+            // `city` is undefined.
+            break;
+
         case "error":
             // An error occurred while fetching the document from Firestore.
             // `city` is undefined.
