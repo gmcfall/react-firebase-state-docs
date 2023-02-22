@@ -7,3 +7,22 @@ url: https://gmcfall.github.io/react-firebase-state-docs
 aux_links:
   Github Repository: https://gmcfall.github.io/react-firebase-state-docs
 
+callouts:
+  highlight:
+    color: yellow
+  prerequisites:
+    title: Prerequisites
+    color: yellow
+  important:
+    title: Important
+    color: blue
+  new:
+    title: New
+    color: green
+  note:
+    title: Note
+    color: purple
+  warning:
+    title: Warning
+    color: red
+

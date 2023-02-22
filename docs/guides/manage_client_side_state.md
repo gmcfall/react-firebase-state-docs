@@ -200,7 +200,7 @@ The third file supplies the React `<Alert>` component.
 ```tsx
 // File: ./src/components/Alert/Alert.tsx
 
-import { Alert } from "@mui/material";
+import { Alert as MuiAlert} from "@mui/material";
 import { useEffect } from 'react';
 import { useData, useEntityApi } from "@gmcfall/react-firebase-state";
 import { alertRemove, selectAlert } from "./alertApi";
@@ -247,9 +247,9 @@ export default function Alert() {
     }
 
     return (
-        <Alert className="alert" severity={alertData.severity}>
+        <MuiAlert className="alert" severity={alertData.severity}>
             {alertData.message}
-        </Alert>
+        </MuiAlert>
     );
 }
 ```
@@ -341,10 +341,6 @@ In addition, we can mutate client-side state from within HTML event handlers as 
         )
     }
 ```
-
-
-
-
 
 ----
 [React Context]: https://reactjs.org/docs/context.html
