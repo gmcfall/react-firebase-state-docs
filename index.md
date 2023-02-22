@@ -10,7 +10,7 @@ within a React web app. It also provides utilities for managing client-side stat
 
 ## Installation
 
-To use `react-firebase-state`, you must install four peer dependencies:
+To use `react-firebase-state`, you must install four peer dependencies if you don't already have them:
 - `react`
 - `react-dom`
 - `immer`
@@ -179,8 +179,13 @@ document id, so `["cities", cityId]` is the path to the document.
 
 When the component unmounts, the `useEffect` hook releases all of the component's leases.
 
-----
+## Next Steps
+- Read about [Key Concepts]
+- Explore the [Guides]
 
+----
 [React]: https://reactjs.org/
 [Firebase]: https://firebase.google.com/
 [AuthStateListener]: https://firebase.google.com/docs/reference/kotlin/com/google/firebase/auth/FirebaseAuth.AuthStateListener
+[Key Concepts]: ./docs/key_concepts.html
+[Guides]: ./guides.html
