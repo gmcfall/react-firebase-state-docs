@@ -132,6 +132,12 @@ export function SomeComponent({ cityId }) {
 
     switch (cityStatus) {
 
+        case "idle":
+            // The path passed to `useDocListener` contains an undefined
+            // value, and therefore a document listener was not started
+            // `city` and `cityError` are both undefined.
+            break;
+
         case "pending":
             // The document is being fetched asynchronously and
             // the response is pending.
@@ -156,9 +162,10 @@ export function SomeComponent({ cityId }) {
             // `cityError` contains the Error thrown by Firestore.
             break;
     }
-    // ...
 }
 ```
+This is just a rough skeleton. A real implementation would return an 
+appropriate child component for each case in the switch statement. 
 
 The `useDocListener` hook does two things:
 
