@@ -25,7 +25,7 @@ with this guide.
 The [Get Started] article introduced the following snippet:
 
 ```jsx
-    const [cityStatus, city, cityError] = useDocListener("SomeComponent", ["cities", cityId]);
+    const [city, cityError, cityStatus] = useDocListener("SomeComponent", ["cities", cityId]);
 ```
 
 This guide expands on that example by
@@ -40,7 +40,7 @@ This guide expands on that example by
 If you are using typescript, you can add a template parameter to the `useDocListener` hook
 as shown below.
 ```tsx
-    const [cityStatus, city, cityError] = useDocListener<City>("SomeComponent", ["cities", cityId]);
+    const [city, cityError, cityStatus] = useDocListener<City>("SomeComponent", ["cities", cityId]);
 ```
 In this case, the `city` variable will be supplied as an object of type `City`.
 
@@ -49,7 +49,7 @@ In this case, the `city` variable will be supplied as an object of type `City`.
 The `useDocListener` hook accepts a third argument containing optional parameters, so you can 
 invoke it like this:
 ```javascript
-    const [cityStatus, city, cityError] = useDocListener(
+    const [city, cityError, cityStatus] = useDocListener(
         "SomeComponent", 
         ["cities", cityId],
         {
@@ -57,7 +57,7 @@ invoke it like this:
             onRemove: handleRemove,
             onError: handleError,
             leaseOptions: {
-                cacheTime: 60000
+                abandonTime: 60000
             }
         }
     );
@@ -133,7 +133,7 @@ declare it.
 The transform function is used as shown below.
 
 ```javascript
-    const [cityStatus, city, cityError] = useDocListener(
+    const [city, cityError, cityStatus] = useDocListener(
         "SomeComponent", ["cities", cityId], {transform: cityTransform}
     );
 ```
@@ -159,7 +159,7 @@ Here's a snippet showing how to use this parameter.
         const message = `The city "${serverData.cityName}" has been deleted`;
         console.log(message);
     }
-    const [cityStatus, city, cityError] = useDocListener<City>(
+    const [city, cityError, cityStatus] = useDocListener<City>(
         "SomeComponent", ["cities", cityId], {onRemove: handleRemove}
     );
 ```
@@ -181,7 +181,7 @@ Here's a snippet showing how to use this parameter.
         const message = `An error occurred while loading the city[id=${cityId}]`;
         console.error({message, error});
     }
-    const [cityStatus, city, cityError] = useDocListener<City>(
+    const [city, cityError, cityStatus] = useDocListener<City>(
         "SomeComponent", ["cities", cityId], {onError: handleError}
     );
 ```
@@ -194,19 +194,19 @@ system.
 ### leaseOptions
 
 The `leaseOptions` parameter is an object that customizes the behavior of the lease created
-for the entity. Currently, there is only possible field within the `leaseOptions` namely `cacheTime`.
+for the entity. Currently, there is only possible field within the `leaseOptions` namely `abandonTime`.
 This value specifies the number of milliseconds that the entity will remain in the cache after
 all components have released their claims on that entity.
 
 Here's a snippet showing how to use the `leaseOptions` parameter.
 ```typescript
    
-    const [cityStatus, city, cityError] = useDocListener(
-        "SomeComponent", ["cities", cityId], {leaseOptions: {cacheTime: 60000}}
+    const [city, cityError, cityStatus] = useDocListener(
+        "SomeComponent", ["cities", cityId], {leaseOptions: {abandonTime: 60000}}
     );
 ```
 
-If you want the entity to remain in the cache indefinitely, set `cacheTime` equal to
+If you want the entity to remain in the cache indefinitely, set `abandonTime` equal to
 `Number.POSITIVE_INFINITY`.
 
 ## Guidelines for using the `useDocListener` hook
@@ -228,7 +228,7 @@ It is important to follow the guidelines listed below:
 - Similar comments apply to the other optional parameters (`onRemove`, `onError` and `leaseOptions`).
     Make sure that all invocations of `useDocListener` for a given path use the same handlers for these
     parameters.
-- Don't forget to call `releaseEntities` when your component unmounts.
+- Don't forget to call `releaseAllClaims` when your component unmounts.
 
 ## Using a document listener within event handlers
 
@@ -323,14 +323,13 @@ function councillorTransform(api: LeaseeApi, serverData: ServerCouncillor, path:
 }
 
 function cityTransform(api: LeaseeApi, serverData: ServerCouncillor, path: string[]) : ClientCity {
-    const client = api.getClient();
     const leasee = api.leasee;
     const councillors: ClientCouncillor[] = [];
 
     for (const councillorId in serverData.councillors) {
         const councillorPath = ["councillors", councillorId];
         const [, councillor, error] = watchEntity(
-            client, leasee, councillorPath, {transform: councillorTransform}
+            api, leasee, councillorPath, {transform: councillorTransform}
         )
         if (error) {
             console.error(`Failed to load councillor[id=${councillorId}]`, error);
@@ -357,14 +356,16 @@ In this example, a component renders the name of a given city
 when a button is pressed. Yes, it's a somewhat contrived example.
 
 ```tsx
-import { useEntityApi, useEntity, watchEntity, releaseEntities } from "@gmcfall/react-firebase-state";
+import { 
+    useEntityApi, useEntity, watchEntity, useReleaseAllClaims 
+} from "@gmcfall/react-firebase-state";
 
 function CityName({cityId}) {
     const path = ["cities", cityId];
     const api = useEntityApi();
-    const [cityStatus, city] = useEntity<City>(path);
+    const [city,,cityStatus] = useEntity<City>(path);
 
-    useEffect(() => () => releaseEntities("CityName"), []);
+    useReleaseAllClaims("CityName");
 
     function handleClick() {
         watchEntity(api, "CityName", path);

@@ -75,15 +75,14 @@ For other use cases, explore the list of available guides.
 
 #### Access the current user
 
-This example shows how you can get information about the current user from the Firebase 
-[AuthStateListener].
+This example shows how you can get information about the currently authenticated user.
 
 ```jsx
 import { useAuthListener } from '@gmcfall/react-firebase-state';
 
 export function ComponentThatAccessesTheCurrentUser() {
     
-    const [userStatus, user, userError] = useAuthListener();
+    const [user, userError, userStatus] = useAuthListener();
 
     switch (userStatus) {
         case "pending":
@@ -123,13 +122,13 @@ passed via props.
 
 ```jsx
 import { useEffect } from "react";
-import { useDocListener, releaseEntities } from '@gmcfall/react-firebase-state';
+import { useDocListener, useReleaseAllClaims } from '@gmcfall/react-firebase-state';
 
 export function SomeComponent({ cityId }) {
 
-    const [cityStatus, city, cityError] = useDocListener("SomeComponent", ["cities", cityId]);
+    const [city, cityError, cityStatus] = useDocListener("SomeComponent", ["cities", cityId]);
 
-    useEffect(() => () => releaseEntities("SomeComponent"), []);
+    useReleaseAllClaims("SomeComponent");
 
     switch (cityStatus) {
 
@@ -148,7 +147,7 @@ export function SomeComponent({ cityId }) {
         case "removed":
             // The document was removed from Firestore.
             // The `city` variable is null.
-            // `city` is undefined.
+            // `cityError` is undefined.
             break;
 
         case "error":
@@ -186,6 +185,5 @@ When the component unmounts, the `useEffect` hook releases all of the component'
 ----
 [React]: https://reactjs.org/
 [Firebase]: https://firebase.google.com/
-[AuthStateListener]: https://firebase.google.com/docs/reference/kotlin/com/google/firebase/auth/FirebaseAuth.AuthStateListener
 [Key Concepts]: ./docs/key_concepts.html
 [Guides]: ./guides.html

@@ -33,13 +33,13 @@ const firebaseApp = initializeFirebaseApp();
 
 const initialState = createInitialState();
 
-// The `cacheTime` parameter specifies the number of milliseconds that a leased
+// The `abandonTime` parameter specifies the number of milliseconds that a leased
 // entity can linger in the cache without any leasees before it becomes eligible
-// for garbage collection. The default value of `cacheTime` is `300000` (5 minutes).
+// for garbage collection. The default value of `abandonTime` is `300000` (5 minutes).
 // you can override this value by passing `options` to the FirebaseProvider.
 
 const options = {
-    cacheTime: 120000 // 2 minutes
+    abandonTime: 120000 // 2 minutes
 }
 
 export function App() {
