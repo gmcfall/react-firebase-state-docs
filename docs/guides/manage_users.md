@@ -13,7 +13,6 @@ nav_order: 4
 > It also assumes you are familiar with:
 > - `useDocListener`
 > - `useEntity`
-> - `releaseAllClaims`
 > - `watchEntity`
 >
 > See [Document Listeners] for more information about these elements of the `react-firebase-state` 
@@ -38,10 +37,11 @@ We recommend that you implement a component like `FirebaseAuthListener` shown be
 ```tsx
 // File: ./src/components/FirebaseAuthListener.tsx
 
-import { useAuthLisener, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { useAuthLisener, AuthErrorEvent } from "@gmcfall/react-firebase-state";
 import { alertError, alertSuccess } from "./Alert/alertApi";
 
-function handleError(api: LeaseeApi, error: error) {
+function handleError(event: AuthErrorEvent) {
+    const error = event.error;
     alertError(api, "An error occurred while getting information about your account", error);
 }
 
@@ -171,7 +171,7 @@ The following functions support these requirements.
 
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
-import { LeaseeApi, setEntity, watchEntity, CURRENT_USER } from "@gmcfall/react-firebase-state";
+import { EntityApi, setAuthUser, watchEntity } from "@gmcfall/react-firebase-state";
 import { alertError } from "../components/Alert/alertApi";
 import { Identity, SessionUser } from "./types";
 
@@ -191,7 +191,7 @@ function createSessionUser(user: User, identity: Identity): SessionUser {
  * Update the Firestore `Identity` document for a given user so that the 
  * `displayName` is consistent with Firebase Auth.
  */
-async function updateDisplayName(api: LeaseeApi, user: User) {
+async function updateDisplayName(api: EntityApi, user: User) {
     const userUid = user.uid;
     const displayName = user.displayName;
     const db = getFirestore(api.firebaseApp);
@@ -205,31 +205,33 @@ async function updateDisplayName(api: LeaseeApi, user: User) {
 }
 
 /**
- * A transform for Identity entities which updates the CURRENT_USER entity
+ * A transform for Identity entities which updates the current user entity
  * in the local cache as a side-effect.
  * 
  * This function does not actually transform the Identity entity. It sole purpose
- * is to keep the CURRENT_USER entity up-to-date and consistent with the 
+ * is to keep the current user entity up-to-date and consistent with the 
  * SessionUser interface.
  */
-function transformIdentity(api: LeaseeApi, serverData: Identity, path: string[]) {
-
+function transformIdentity(event: DocChangeEvent<Identity>) {
+    const api = event.api;
+    const serverData = event.data;
     const auth = getAuth(api.firebaseApp);
     const user = auth.currentUser;
     if (user && user.uid === serverData.uid) {
-        if (user.displayName !== identityDisplayName) {
+        if (user.displayName !== serverData.displayName) {
             updateDisplayName(api, user);
         }
         const sessionUser = createSessionUser(user, identity);
-        // CURRENT_USER is the key under which the current user entity
-        // is stored in the local cache.
-        setEntity(api, CURRENT_USER, sessionUser);
+        setAuthUser(api, sessionUser);
     }
 
     return serverData
 }
 
-function handleIdentityError(api: LeaseeApi, error: Error, path: string[]) {
+function handleIdentityError(event: DocErrorEvent) {
+    const api = event.api;
+    const error = event.error;
+    const path = event.path;
     const auth = getAuth(api.firebaseApp);
     
     const message = auth.currentUser ?
@@ -251,12 +253,13 @@ export function identityPath(userUid: string) {
 /**
  * Transform the Firebase User into a SessionUser.
  */
-export function transformUser(api: LeaseeApi, user: User) {
-
-    const leasee = api.leasee;
+export function transformUser(event: UserChangeEvent) {
+    const api = event.api;
+    const user = event.user;
+    const leasee = event.leasee;
     const path = identityPath(user.uid);
     
-    const [, identity, identityError] = watchEntity(api, leasee, path, IDENTITY_OPTIONS);
+    const [identity, identityError] = watchEntity(api, leasee, path, IDENTITY_OPTIONS);
 
     if (identity) {
         if (identity.displayName !== user.displayName) {
@@ -285,11 +288,13 @@ Here's the revised component:
 ```tsx
 // File: ./src/components/FirebaseAuthListener.tsx
 
-import { useAuthLisener, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { useAuthLisener, AuthErrorEvent } from "@gmcfall/react-firebase-state";
 import { alertError, alertSuccess } from "../Alert/alertApi";
 import { transformUser } from "../../shared/identity"; // NEW
 
-function handleError(api: LeaseeApi, error: error) {
+function handleError(event: AuthErrorEvent) {
+    const api = event.api;
+    const error = event.error;
     alertError(api, "An error occurred while getting information about your account", error);
 }
 
@@ -375,7 +380,7 @@ user data, then it is easier to fetch that data as illustrated by the following 
 ```tsx
 // File: ./src/components/AnyUserIdentity.tsx
 
-import { useDocListener, useReleaseAllClaims } from "@gmcfall/react-firebase-state";
+import { useDocListener } from "@gmcfall/react-firebase-state";
 import { Identity } from "../shared/types";
 import { identityPath, IDENTITY_OPTIONS} from "../shared/identity";
 import { UserIdentity } from "./UserIdentity";
@@ -388,8 +393,6 @@ export function AnyUserIdentity(props: AnyUserIdentityProps) {
     const {userUid} = props;
     const path = identityPath(userUid);
     const [, identity] = useDocListener("AnyUserIdentity", path, IDENTITY_OPTIONS);
-    
-    useReleaseAllClaims("AnyUserIdentity");
 
     return (
         identity ? (

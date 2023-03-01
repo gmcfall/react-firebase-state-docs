@@ -57,10 +57,3 @@ Nearly all of the capabilities of the `react-firebase-state` library are exposed
 functions that leverage an `EntityApi` instance to do their work.
 
 The `EntityApi` provides access to the Cache, Leases and the FirebaseApp object.
-
-## LeaseeApi
-The `LeaseeApi` extends the `EntityApi` interface by providing a reference to a particular
-leasee. This is useful when making changes to the cache in callback functions.
-
-
-

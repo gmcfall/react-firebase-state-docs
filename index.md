@@ -122,13 +122,11 @@ passed via props.
 
 ```jsx
 import { useEffect } from "react";
-import { useDocListener, useReleaseAllClaims } from '@gmcfall/react-firebase-state';
+import { useDocListener } from '@gmcfall/react-firebase-state';
 
 export function SomeComponent({ cityId }) {
 
     const [city, cityError, cityStatus] = useDocListener("SomeComponent", ["cities", cityId]);
-
-    useReleaseAllClaims("SomeComponent");
 
     switch (cityStatus) {
 

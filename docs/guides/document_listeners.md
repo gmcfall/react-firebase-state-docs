@@ -54,7 +54,7 @@ invoke it like this:
         ["cities", cityId],
         {
             transform: cityTransform,
-            onRemove: handleRemove,
+            onRemoved: handleRemoved,
             onError: handleError,
             leaseOptions: {
                 abandonTime: 60000
@@ -64,7 +64,7 @@ invoke it like this:
 ```
 This example introduces four new parameters:
 - [transform]
-- [onRemove]
+- [onRemoved]
 - [onError]
 - [leaseOptions]
 
@@ -107,8 +107,10 @@ A document having this structure matches the `ClientCity` type.
 
 To convert a `ServerCity` into a `ClientCity`, we introduce the following transform.
 ```typescript
-function cityTransform(api: LeaseeApi, serverData: ServerCity, path: string[]): ClientCity {
-    const councillors = Object.values(serverData.councillors);
+function cityTransform(event: DocChangeEvent<ServerCity>): ClientCity {
+    const serverData = event.data;
+    const path = event.path;
+    const councillors  = Object.values(serverData.councillors);
     councillors.sort( (a, b) => a.name.localeCompare(b.name) );
 
     return {
@@ -118,17 +120,6 @@ function cityTransform(api: LeaseeApi, serverData: ServerCity, path: string[]): 
     }
 }
 ```
-
-Transform functions take three arguments:
-- `api`: A LeaseeApi
-- `serverData`: The raw data from the Firestore document
-- `path`: The path to the Firestore document
-
-The `api` parameter allows the transform function to read other entities in the cache or
-modify them as a side effect.
-
-The `cityTransform` function does not use the `api` parameter, but it still must
-declare it.
 
 The transform function is used as shown below.
 
@@ -148,22 +139,23 @@ The transform function is called when the document is initially received from
 Firestore and whenever the document is modified. The return value from the transform
 function is stored in the cache (not the raw data from the Firestore document).
 
-### onRemove
+### onRemoved
 
-The `onRemove` parameter allows you to define a callback function that fires whenever
+The `onRemoved` parameter allows you to define a callback function that fires whenever
 the Firestore document is deleted.
 
 Here's a snippet showing how to use this parameter.
 ```typescript
-    function handleRemove(api: LeaseeApi, serverData: ServerCity, path: string[]) {
+    function handleRemoved(event: DocRemovedEvent<ServerCity>) {
+        const serverData = event.data;
         const message = `The city "${serverData.cityName}" has been deleted`;
         console.log(message);
     }
     const [city, cityError, cityStatus] = useDocListener<City>(
-        "SomeComponent", ["cities", cityId], {onRemove: handleRemove}
+        "SomeComponent", ["cities", cityId], {onRemoved: handleRemoved}
     );
 ```
-The `handleRemove` function defined here merely logs a message to the console. In a production 
+The `handleRemoved` function defined here merely logs a message to the console. In a production 
 app, you might consider rendering an "info" message that notifies the user that the city entity 
 was deleted.
 
@@ -176,10 +168,11 @@ occurred while fetching the document from Firestore.
 
 Here's a snippet showing how to use this parameter.
 ```typescript
-    function handleError(api: LeaseeApi, error: Error, path: string[]) {
+    function handleError(event: DocErrorEvent) {
+        const path = event.path;
         const cityId = path[path.length-1];
         const message = `An error occurred while loading the city[id=${cityId}]`;
-        console.error({message, error});
+        console.error({message, event.error});
     }
     const [city, cityError, cityStatus] = useDocListener<City>(
         "SomeComponent", ["cities", cityId], {onError: handleError}
@@ -194,9 +187,9 @@ system.
 ### leaseOptions
 
 The `leaseOptions` parameter is an object that customizes the behavior of the lease created
-for the entity. Currently, there is only possible field within the `leaseOptions` namely `abandonTime`.
-This value specifies the number of milliseconds that the entity will remain in the cache after
-all components have released their claims on that entity.
+for the entity. Currently, there is only one possible field within the `leaseOptions` namely 
+`abandonTime`. This value specifies the number of milliseconds that the entity will remain in 
+the cache after all components have released their claims on that entity.
 
 Here's a snippet showing how to use the `leaseOptions` parameter.
 ```typescript
@@ -225,10 +218,9 @@ It is important to follow the guidelines listed below:
 - If multiple clients invoke `useDocListener`, make sure they all use the same `transform`.
     This is important because the cache will store only one instance of a given entity.
     If different components use different transforms you will end up with type conflicts.
-- Similar comments apply to the other optional parameters (`onRemove`, `onError` and `leaseOptions`).
+- Similar comments apply to the other optional parameters (`onRemoved`, `onError` and `leaseOptions`).
     Make sure that all invocations of `useDocListener` for a given path use the same handlers for these
     parameters.
-- Don't forget to call `releaseAllClaims` when your component unmounts.
 
 ## Using a document listener within event handlers
 
@@ -240,7 +232,7 @@ First, we have Firestore event handlers. These are handlers
 that fire when a Firestore document changes state, and they are specified as the optional
 parameters of the `useDocListener` hook:
 - [transform] fires when the document is first loaded or is modified
-- [onRemove] fires when the document is removed from Firestore
+- [onRemoved] fires when the document is removed from Firestore
 - [onError] fires if an error occurs while fetching the document from Firestore
 
 Second, we have HTML event handlers such as the `onClick` handler for a button.
@@ -266,9 +258,15 @@ In this scenario, the set of city councillors is represented as a map
 where the key is the `id` of the councillor, and the value is the 
 boolean literal `true`. Information about individual councillors can be found
 in the `councillors` collection which stores documents of type 
-`ServerCouncillor` 
-with data of the form:
-
+`ServerCouncillor`, defined as follows:
+```typescript
+interface ServerCouncillor {
+    cityId: string;
+    name: string;
+    ward: string;
+}
+```
+Here's an example of a councillor document stored in Firestore:
 ```javascript
 // Document: councillors/PxFNV
 {
@@ -278,8 +276,15 @@ with data of the form:
 }
 ```
 
-We require that the `ClientCity` type has the form:
+We require a `ClientCouncillor` type that extends `ServerCouncillor` by
+adding the councillor `id`. Thus, we have:
+```typescript
+interface ClientCouncillor extends ServerConcillor {
+    id: string
+}
+```
 
+Here's an example of the city data that will be stored in the local cache:
 ```javascript
 {
     id: "dIjZC",
@@ -292,18 +297,19 @@ We require that the `ClientCity` type has the form:
 }
 ```
 
-We have introduced the `ClientCouncillor` interface which extends `ServerCouncillor`
-by adding the councillor's `id` value.
-
 We can use the following code to satisfy the requirements of the current scenario.
 
 ```typescript
-function sortCouncillors(councillors: string[]) {
+/**
+ * Sort an array of concillors by name
+ */
+function sortCouncillors(councillors: ClientCouncillor[]) {
     councillors.sort( (a, b) => a.name.localeCompare(b.name));
 }
 
-function councillorTransform(api: LeaseeApi, serverData: ServerCouncillor, path: string[]) {
-
+function councillorTransform(event: DocChangeEvent<ServerCouncillor>) {
+    const serverData = event.data;
+    const path = event.path;
     const id = path[path.length-1];
     const councillor: ClientCouncillor = {
         ...serverData,
@@ -311,7 +317,7 @@ function councillorTransform(api: LeaseeApi, serverData: ServerCouncillor, path:
     }
 
     const cityPath = ["cities", councillor.cityId];
-    const [,city] = getEntity<ClientCity>(api, cityPath);
+    const [city] = getEntity<ClientCity>(api, cityPath);
 
     if (city) {
         const councillors = city.councillors.filter( c => c !== id);
@@ -322,13 +328,16 @@ function councillorTransform(api: LeaseeApi, serverData: ServerCouncillor, path:
     return councillor;
 }
 
-function cityTransform(api: LeaseeApi, serverData: ServerCouncillor, path: string[]) : ClientCity {
-    const leasee = api.leasee;
+function cityTransform(event: DocChangeEvent<ServerCity>) : ClientCity {
+    const api = event.api; // The EntityApi instance used by the application
+    const serverData = event.data;
+    const leasee = event.leasee;
+    const path = event.path;
     const councillors: ClientCouncillor[] = [];
 
     for (const councillorId in serverData.councillors) {
         const councillorPath = ["councillors", councillorId];
-        const [, councillor, error] = watchEntity(
+        const [councillor, error] = watchEntity(
             api, leasee, councillorPath, {transform: councillorTransform}
         )
         if (error) {
@@ -360,6 +369,9 @@ import {
     useEntityApi, useEntity, watchEntity, useReleaseAllClaims 
 } from "@gmcfall/react-firebase-state";
 
+/**
+ * A React Component that renders the city name when a button is pressed
+ */
 function CityName({cityId}) {
     const path = ["cities", cityId];
     const api = useEntityApi();
@@ -392,7 +404,7 @@ function CityName({cityId}) {
 ----
 [Get Started]: ../..
 [transform]: #transform
-[onRemove]: #onremove
+[onRemoved]: #onRemoved
 [onError]: #onerror
 [leaseOptions]: #leaseoptions
 [Manage client-side state]: ./manage_client_side_state.html

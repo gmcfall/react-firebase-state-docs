@@ -125,7 +125,7 @@ export function alertRemove(api: EntityApi) {
  * 
  * Example:
  * ```
- *   handleError(api: LeaseeApi, error: Error, path: string[]) {
+ *   handleError(api: EntityApi, error: Error, path: string[]) {
  *      alertError(api, "Oops! An error occurred", error);
  *   }
  * ```
@@ -277,7 +277,8 @@ yields a value for `alertData` that has the `AlertData` type.
 The [Document Listeners] guide presented the following error handler:
 
 ```typescript
-    function handleError(api: LeaseeApi, error: Error, path: string[]) {
+    function handleError(event: DocErrorEvent) {
+        const path = event.path;
         const cityId = path[path.length-1];
         const message = `An error occurred while loading the city[id=${cityId}]`;
         console.error({message, error});
@@ -287,7 +288,8 @@ This handler has the drawback that it merely logs to the console.  It would be
 better to display the error message to the user via our alerting system as shown
 below.
 ```typescript
-    function handleError(api: LeaseeApi, error: Error, path: string[]) {
+    function handleError(event: DocErrorEvent) {
+        const api = event.api;
         api.mutate(
             (app: SampleApp) => {
                 app.alertData = {
@@ -298,7 +300,7 @@ below.
         )
     }
 ```
-This revision of the handler uses the `mutate` function provided by the `LeaseeApi`.
+This revision of the handler uses the `mutate` method of the `EntityApi`.
 The `mutate` function takes a callback as its sole argument. The callback receives
 the current client-side state, and the body of the callback makes changes
 to that state.
@@ -307,7 +309,8 @@ As a best practice, we recommend putting mutations into helper functions. For in
 we can simplify the error handler by leveraging a helper function from the `alertApi.ts`
 file. 
 ```typescript
-    function handleError(api: LeaseeApi, error: Error, path: string[]) {
+    function handleError(event: DocErrorEvent) {
+        const error = event.error;
         const context = {cityId: path[path.length-1]};
         alertError(api, "An error occurred while loading the city data", error, context);
     }
@@ -315,8 +318,8 @@ file.
 
 Similarly, we can define a Firestore remove handler like this:
 ```typescript
-    function handleRemove(api: LeaseeApi, serverData: ServerCity, path: string[]) {
-        const message = `The city "${serverData.cityName}" has been deleted`;
+    function handleRemove(event: DocChangeEvent<City>) {
+        const message = `The city "${event.data.cityName}" has been deleted`;
         alertSuccess(api, message);
     }
 ```
