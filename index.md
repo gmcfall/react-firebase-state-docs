@@ -35,7 +35,7 @@ library with plain-old Javascript.
 
 The `react-firebase-state` library provides a collection of hooks and other utilities
 for managing state. To use the library in the child components of your application, 
-you must wrap them within a `<FirebaseProvider>` component.
+you must wrap them within a `<FirebaseProvider>` component. 
 
 ### Wrap your application
 
